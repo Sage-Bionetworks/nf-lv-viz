@@ -1,0 +1,263 @@
+---
+title: "pan-NF multiPLIER analysis"
+author: "Robert Allaway"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+# Setup
+
+```{r setup}
+library(tximport)
+library(dplyr)
+library(synapser)
+```
+
+## Login to Synapse
+
+```{r include=FALSE}
+synLogin()
+```
+
+## Get annotation maps and multiPLIER code
+
+```{r}
+library(org.Hs.eg.db)
+source('https://raw.githubusercontent.com/greenelab/multi-plier/7c56a2867f9f08f7bcd3617875c7c2dbe886cbeb/util/plier_util.R')
+
+plier_model <- readr::read_rds(synGet("syn18689545")$path)
+
+`%>%` <- magrittr::`%>%`
+
+```
+
+## Get expression data
+
+```{r message=FALSE, warning=FALSE}
+tx2gene_df <- synGet('syn18482848')$path %>% readr::read_tsv()
+
+
+metadata <- synTableQuery("SELECT * FROM syn16858331 where fileFormat = 'sf'", 
+                               includeRowIdAndRowVersion=F)$asDataFrame()
+
+metadata$isCellLine <- toupper(metadata$isCellLine)
+
+rownames(metadata) <- metadata$id
+  
+
+salmon_entities <- sapply(metadata$id, synGet)
+
+salmon_filepaths <- sapply(salmon_entities, function(x){
+  x$path
+})
+
+tx_data <- tximport(salmon_filepaths, type = 'salmon', tx2gene = tx2gene_df,
+                          countsFromAbundance = "no", ignoreTxVersion = TRUE)
+```
+
+
+## Map IDs 
+
+Map Ensembl ids to HUGO identifiers for multiPLIER. Get rid of duplicated genes and filter out low abundance genes (sum of gene counts < 10 removed).
+```{r}
+abundance <- tx_data$abundance %>% as.data.frame() 
+
+mapped_list <- mapIds(org.Hs.eg.db, keys = rownames(abundance), column = "SYMBOL", 
+                      keytype = "ENSEMBL", multiVals = "list")
+
+mapped_df <- reshape2::melt(mapped_list)
+
+colnames(mapped_df) <- c("SYMBOL", "ENSEMBL")
+
+abundance$gene_id <- rownames(abundance)
+
+# let's use the mappings to reannotate our data
+abundance <- mapped_df %>%
+  # removing anything in the SYMBOL column that is NA
+  filter(!is.na(SYMBOL)) %>%
+  # join by Ensembl gene ids, retaining only Ensembl gene ids in both
+  inner_join(y = abundance, by = c("ENSEMBL" = "gene_id")) %>% 
+  dplyr::select(-ENSEMBL) %>% 
+  add_count(SYMBOL)
+
+duplicate_genes <- abundance %>% filter(n > 1) %>% dplyr::select(-n)
+
+abundance_filt <- abundance  %>% 
+  filter(n == 1) %>% 
+  tibble::column_to_rownames("SYMBOL") %>% 
+  dplyr::select(-n)  %>%
+  as.matrix()
+
+abundance_filt_cutoff <- abundance_filt[rowSums(abundance_filt) > 10,]
+
+```
+
+# multiPLIER
+
+## Filtering out LVs
+
+```{r}
+mp_res <- GetNewDataB(abundance_filt_cutoff, plier_model)
+```
+
+### Filter by standard deviation 
+
+Most of the latent variables have low standard deviation across this cohort of samples, and thus are probably not interesting for comparing across or within tumor groups. A cutoff of SD > 0.075 seems to be a reasonable cutoff to filter out the least variable LVs. 
+
+```{r}
+library(ggplot2)
+
+mp_res_tidy <- mp_res %>% 
+  as.data.frame(.) %>% 
+  tibble::rownames_to_column('latent_var') %>% 
+  tidyr::gather("id","value",-latent_var) %>% 
+  group_by(latent_var) %>% 
+  mutate(sd_value = sd(value)) %>% 
+  ungroup() %>% 
+  mutate(trunc_label = stringr::str_trunc(latent_var, 10, "right")) %>% 
+  left_join(metadata)
+
+ggplot(data= mp_res_tidy %>% dplyr::select(latent_var,sd_value) %>% distinct()) +
+  geom_histogram(aes(x=sd_value))
+
+ggplot(data = mp_res_tidy) +
+  geom_boxplot(aes(x=reorder(trunc_label, -sd_value), y = value, color = sd_value > 0.075))
+
+```
+
+It is probably a safe assumption that (at least for subtyping these tumors), the latent variables with high variance across the cohort are the most "interesting." Let's look only at those with a standard deviation of 0.075 or greater (green in the above plot).
+
+```{r}
+
+mp_res_tidy_filt <- mp_res_tidy %>% 
+  filter(sd_value > 0.05)
+
+mp_res_filt <- mp_res[rownames(mp_res) %in% unique(mp_res_tidy_filt$latent_var),]
+
+```
+
+### Filter by Correlation
+
+And correlate the loadings of the latent variables to see if any have huge overlap between one another. In the plot below, if "high SD" is true, we are looking at the correlation of a latent variable where the standard deviation is 0.075 to another LV with a SD > 0.075. All other comparisions are in red. 
+
+```{r}
+
+plier_loadings <- plier_model$Z 
+colnames(plier_loadings) <- rownames(mp_res)
+
+plier_cor <- cor(plier_loadings) 
+
+interesting_lvs <- mp_res_tidy_filt$latent_var 
+
+plier_cor_tidy <- plier_cor %>% 
+  as.data.frame() %>% 
+  tibble::rownames_to_column('lv1') %>% 
+  tidyr::gather("lv2","cor",-lv1) %>% 
+  filter(lv1 != lv2) %>% 
+  distinct() %>%
+  mutate(high_sd=case_when((lv1 %in% interesting_lvs & lv2 %in% interesting_lvs) ~ TRUE,
+                               (!lv1 %in% interesting_lvs | !lv2 %in% interesting_lvs) ~ FALSE))
+
+ggplot(data = plier_cor_tidy) + 
+  geom_density(aes(x = cor, color = high_sd))
+
+```
+
+And toss out latent variables with a Pearson correlation >0.5 to other latent variables.
+
+```{r}
+high_cor_rm <- plier_cor_tidy %>% filter(cor > 0.5 & high_sd == TRUE) %>% group_by(cor) %>% dplyr::slice(2) %>% ungroup()
+
+mp_res_filt <- mp_res_filt[!rownames(mp_res_filt) %in% high_cor_rm$lv1,]
+
+mp_res_tidy_filt <- filter(mp_res_tidy_filt, !latent_var %in% high_cor_rm$lv1)
+```
+
+## Visualize results
+
+### Cluster/heatmap analysis
+
+We end up with 100 latent variables after removing highly correlated LVs and LVs where SD across the whole cohort is < 0.05. Let's cluster the samples we looked and and the LVs. Sample clusters are largely defined by sample type and the originating study, unfortunately these are somewhat concordant so it's hard to disambiguate these two variables. 
+
+```{r fig.height=10, fig.width= 6}
+
+
+out <- pheatmap(mp_res_filt, show_rownames = F, border_color = NA, annotation_col = metadata %>% dplyr::select(tumorType, nf1Genotype, isCellLine, studyName))
+
+
+```
+
+What are the latent variables here?
+
+```{r}
+
+clust <- out$tree_row$labels[out$tree_row$order]
+
+print(clust)
+
+```
+
+### Plotting individual latent variables 
+
+I've plotted all of the interesting and non-overlapping (in terms of correlation) LVs here - each plot is a latent variable, and each point is a single tumor. Interesting idea - could we predict the identity of the unspecified neurofibromas ("Neurofibromas") based on the known status of the plexiform and cutaneous neurofibromas? More broadly, could we use this as a feature selection method to predict tumor type? For each plot, I've also taken a closer look at the top 30 genes in each "interesting" LV.   
+
+
+```{r}
+
+plier_loadings_df <- plier_model$Z %>% as.data.frame() %>% purrr::set_names(rownames(mp_res))
+
+for(i in unique(mp_res_tidy_filt$latent_var)){
+  
+  p1 <- ggplot(data = mp_res_tidy_filt %>% filter(latent_var == i)) +
+  ggbeeswarm::geom_quasirandom(aes(x=reorder(latent_var, -sd_value), y = value , color = tumorType, group = tumorType), dodge.width = 0.75) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 10, angle = 0)) +
+    labs(x = "", y = "multiPLIER value")
+
+  tidy <- plier_loadings_df %>%
+  dplyr::select(i) %>% 
+  tibble::rownames_to_column('lv')
+
+  p2 <- ggplot(tidy %>% top_n(30, get(i))) +
+    geom_bar(aes(x=reorder(lv, -get(i)), y=get(i)), stat = "identity") +
+    theme(axis.text.x = element_text(angle = 90)) +
+      labs(x = "Gene", y = "LV Loading")
+
+  
+  gridExtra::grid.arrange(p1, p2)
+
+}
+
+library(feather)
+
+mp_res_tidy_filt %>% write_feather("filt_nf_mp_res.feather")
+plier_loadings_df %>% write_feather("mp_loadings.feather")
+
+
+library(tidyverse)
+
+tidy_loadings <- plier_loadings_df %>% 
+  tibble::rownames_to_column("gene") %>% 
+  tidyr::gather(lv, weight, -gene) %>% 
+  filter(weight > 0)
+  
+write_feather(tidy_loadings, "mp_loadings_tidy.feather")
+
+```
+
+```{r}
+drug_targets <- synGet("syn17091507")$path %>% 
+  readRDS()
+
+write_feather(drug_targets, 'dtex_targets.feather')
+
+```
+
+
+```{r}
+sessionInfo()
+```
+
