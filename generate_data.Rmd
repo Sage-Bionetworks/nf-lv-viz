@@ -75,7 +75,7 @@ colnames(mapped_df) <- c("SYMBOL", "ENSEMBL")
 abundance$gene_id <- rownames(abundance)
 
 # let's use the mappings to reannotate our data
-abundance <- mapped_df %>% b
+abundance <- mapped_df %>%
   # removing anything in the SYMBOL column that is NA
   filter(!is.na(SYMBOL)) %>%
   # join by Ensembl gene ids, retaining only Ensembl gene ids in both
@@ -233,7 +233,10 @@ for(i in unique(mp_res_tidy_filt$latent_var)){
 
 library(feather)
 
-mp_res_tidy_filt %>% write_feather("filt_nf_mp_res.feather")
+mp_res_tidy_filt %>% 
+  mutate(tumorType = case_when(is.na(tumorType) ~ "non-tumor", 
+                               !is.na(tumorType) ~ tumorType)) %>% 
+  write_feather("filt_nf_mp_res.feather")
 plier_loadings_df %>% write_feather("mp_loadings.feather")
 
 

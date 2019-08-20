@@ -8,6 +8,7 @@ library(plotly)
 library(ggbeeswarm)
 library(highcharter)
 library(shinycssloaders)
+library(textshape)
 library(DT)
 
 mp_dat <- read_feather("filt_nf_mp_res.feather")
