@@ -40,7 +40,7 @@ plier_model <- readr::read_rds(synGet("syn18689545")$path)
 tx2gene_df <- synGet('syn18482848')$path %>% readr::read_tsv()
 
 
-metadata <- synTableQuery("SELECT * FROM syn16858331 where fileFormat = 'sf'", 
+metadata <- synTableQuery("SELECT * FROM syn16858331 where fileFormat = 'sf' and accessType in ('PUBLIC','REQUEST ACCESS')", 
                                includeRowIdAndRowVersion=F)$asDataFrame()
 
 metadata$isCellLine <- toupper(metadata$isCellLine)
@@ -75,7 +75,7 @@ colnames(mapped_df) <- c("SYMBOL", "ENSEMBL")
 abundance$gene_id <- rownames(abundance)
 
 # let's use the mappings to reannotate our data
-abundance <- mapped_df %>%
+abundance <- mapped_df %>% b
   # removing anything in the SYMBOL column that is NA
   filter(!is.na(SYMBOL)) %>%
   # join by Ensembl gene ids, retaining only Ensembl gene ids in both
