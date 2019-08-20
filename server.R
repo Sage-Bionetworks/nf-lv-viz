@@ -31,7 +31,7 @@ shinyServer(function(input, output) {
        left_join(samp_metadata) %>% 
        select(PC1, PC2, {{ grouping_var }}, id)
      
-     hchart(pca, "scatter", hcaes(x = PC1, y = PC2, group = !!grouping_var))
+     hchart(pca, "scatter", hcaes(x = PC1, y = PC2, group = !!grouping_var, shape))
       
     })
     
