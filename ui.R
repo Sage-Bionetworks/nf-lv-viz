@@ -17,9 +17,9 @@ dashboardPage(
                 shinyjs::useShinyjs(),
             tabsetPanel(
                 tabPanel(title = "Global Summary",
-                         fluidRow(box("Sample by LV Heatmap",
+                         fluidRow(box("Sample by LV Heatmap", status = 'primary',
                          highchartOutput2("lv_heatmap") %>% withSpinner()),
-                         box("PCA of LVs",
+                         box("PCA of LVs", status = 'primary',
                          highchartOutput("lv_pca") %>% withSpinner()
                          ))),
                 tabPanel(title = "Individual LVs",
@@ -29,14 +29,14 @@ dashboardPage(
                         choices = unique(mp_dat$latent_var),
                         multiple = FALSE),
                         fluidRow(
-                       box("LV Expression by Sample",
+                       box("LV Expression by Sample" ,status = 'primary',
                          plotOutput("individual_lv_dotplot") %>% withSpinner(),
                          width = 6),
-                       box("LV-Gene Loading",
+                       box("LV-Gene Loading", status = 'primary',
                         plotlyOutput("lv_loading_barplot") %>% withSpinner(),
                         width = 6)),
                        fluidRow(
-                       box("LV-Drug Target Overlap",
+                       box("LV-Drug Target Overlap", status = 'primary',
                         highchartOutput("druggable_lvs") %>% withSpinner(),
                         width = 12))
             ))
