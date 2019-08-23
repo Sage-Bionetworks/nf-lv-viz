@@ -20,7 +20,7 @@ dashboardPage(
                          fluidRow(box("Sample by LV Heatmap", status = 'primary',
                          highchartOutput2("lv_heatmap") %>% withSpinner()),
                          box("PCA of LVs", status = 'primary',
-                         highchartOutput("lv_pca") %>% withSpinner()
+                         plotOutput("lv_pca") %>% withSpinner()
                          ))),
                 tabPanel(title = "Individual LVs",
                          h5("Select a Latent Variable to Explore:"),
@@ -29,15 +29,15 @@ dashboardPage(
                         choices = unique(mp_dat$latent_var),
                         multiple = FALSE),
                         fluidRow(
-                       box("LV Expression by Sample" ,status = 'primary',
-                         plotOutput("individual_lv_dotplot") %>% withSpinner(),
-                         width = 6),
-                       box("LV-Gene Loading", status = 'primary',
-                        plotlyOutput("lv_loading_barplot") %>% withSpinner(),
+                            box("LV Expression by Sample: This module plots the expression of each LV grouped by biological sample." ,status = 'primary',
+                                plotOutput("individual_lv_dotplot") %>% withSpinner(),
+                                width = 6),
+                            box("LV-Gene Loading: This module plots the 5% highest-loading genes in the selected latent variable.", status = 'primary',
+                             plotlyOutput("lv_loading_barplot") %>% withSpinner(),
                         width = 6)),
                        fluidRow(
-                       box("LV-Drug Target Overlap", status = 'primary',
-                        highchartOutput("druggable_lvs") %>% withSpinner(),
+                           box("Drug Target Overlap: This module identifies molecules and the number of drug targets from those molecules that overlap with in the top 5% of gene loadings in the selected latent variable.", status = 'primary',
+                               highchartOutput("druggable_lvs") %>% withSpinner(),
                         width = 12))
             ))
     )

@@ -1,7 +1,8 @@
 shinyServer(function(input, output) {
 
   grouping_var <- "tumorType"
-  samp_metadata <- select(mp_dat, id, {{ grouping_var }}) %>% distinct()
+  shape_var <- "isCellLine"
+  samp_metadata <- select(mp_dat, id, {{ grouping_var }},  {{ shape_var }}) %>% distinct()
     
   heatmap_dat <- eventReactive(input$goButton, {
     disable("goButton")
@@ -23,17 +24,22 @@ shinyServer(function(input, output) {
        chart
     })
     
-    output$lv_pca <- renderHighchart({
+    output$lv_pca <- renderPlot({
       
      pca <- prcomp(heatmap_dat())
      pca <- as.data.frame(pca$x) %>% 
        tibble::rownames_to_column("id") %>% 
        left_join(samp_metadata) %>% 
-       select(PC1, PC2, {{ grouping_var }}, id)
+       select(PC1, PC2, {{ grouping_var }},  {{ shape_var }}, id)
      
-     hchart(pca, "scatter", hcaes(x = PC1, y = PC2, group = !!grouping_var, shape))
-      
-    })
+     p <- ggplot(pca) + 
+       geom_point(aes(x = PC1, y = PC2, color = get(grouping_var), shape = get(shape_var))) +
+       theme_bw() +
+       scale_color_discrete(name = {{grouping_var}}) +
+       scale_shape_discrete(name = {{shape_var}})
+       
+     p
+     })
     
     plot_dat <- eventReactive(input$lv_view, {
       
@@ -46,10 +52,10 @@ shinyServer(function(input, output) {
       dotplot_data <- plot_dat() %>%
         dplyr::filter(latent_var == input$lv_view)
       
-      anova_res <- "add 2 or more tumor types to perform anova"
+      anova_res <- "add 2 or more groups to perform anova"
       
       if(length(input$tums) > 1){
-        foo <- aov(value ~ tumorType, data = dotplot_data) 
+        foo <- aov(value ~ get(grouping_var), data = dotplot_data) 
         res <- summary(foo)[[1]][[1,"Pr(>F)"]] %>% 
           signif(., digits = 3)
         anova_res <- paste0("ANOVA p-value: ", res)
@@ -58,8 +64,12 @@ shinyServer(function(input, output) {
       p1 <- ggplot(data = dotplot_data %>%
                      filter(latent_var == input$lv_view) %>% 
                      filter(tumorType %in% input$tums)) +
-        ggbeeswarm::geom_quasirandom(aes(x=reorder(latent_var, -sd_value), y = value , color = tumorType, group = tumorType), dodge.width = 0.75) +
+        ggbeeswarm::geom_quasirandom(aes(x=reorder(latent_var, -sd_value), y = value , color = get(grouping_var), 
+                                         group = get(grouping_var), 
+                                         shape = get(shape_var)), dodge.width = 0.75) +
         theme_bw() +
+        scale_color_discrete(name = {{grouping_var}}) +
+        scale_shape_discrete(name = {{shape_var}}) +
         theme(axis.text.x = element_text(size = 10, angle = 0)) +
         labs(x = "", y = "LV expression", title = anova_res)
     
@@ -73,15 +83,14 @@ shinyServer(function(input, output) {
             dplyr::filter(lv == input$lv_view)  
         
   
-         p2 <- ggplot(loadings %>% filter(quantile(weight, 0.95)<weight)) +
+         p2 <- ggplot(loadings) +
                 geom_bar(aes(x=reorder(gene, -weight), y=weight, fill = gene %in% drug_targets$gene, label = `Drug Name`), stat = "identity") +
-                scale_fill_manual(name = "Is Drug Target", values= c("TRUE" = "#28AFB0", "FALSE" = "#004BA8")) +
+                scale_fill_manual(name = "Is Drug\nTarget", values= c("TRUE" = "#28AFB0", "FALSE" = "#004BA8")) +
                 labs(x = "Gene", y = "LV Loading") +
              theme_bw() +
              theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))  
          
-        plotly::ggplotly(p2, tooltip = c("x", "label"), dynamicTicks = T) %>% 
-          layout(legend = list(x = 0.9, y = 0.9))
+        plotly::ggplotly(p2, tooltip = c("x", "label"), dynamicTicks = T)    
         
         })
     

@@ -12,7 +12,13 @@ library(textshape)
 library(DT)
 
 mp_dat <- read_feather("filt_nf_mp_res.feather")
-plier_loadings <- read_feather("mp_loadings_tidy.feather")
+
+
+
+plier_loadings <- read_feather("mp_loadings_tidy.feather") %>% 
+  dplyr::group_by(lv) %>% 
+  filter(quantile(weight, 0.95)<weight) %>% 
+  ungroup()
 
 drug_targets <- read_feather('dtex_targets.feather') 
 
@@ -26,7 +32,6 @@ drug_targets <- drug_targets %>%
 plier_loadings_individual_drugs <- plier_loadings %>% 
   left_join(drug_targets) %>% 
   dplyr::group_by(lv) %>% 
-  filter(quantile(weight, 0.95)<weight) %>% 
   filter(!is.na(std_name)) %>% 
   mutate(druggable_targets_in_lv = sum(!is.na(std_name))) %>% 
   ungroup() %>% 
