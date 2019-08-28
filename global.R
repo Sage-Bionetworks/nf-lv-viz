@@ -13,7 +13,9 @@ library(DT)
 
 mp_dat <- read_feather("filt_nf_mp_res.feather")
 
-
+grouping_var_options <- c("tumorType", "diagnosis", "species", 
+                          "isCellLine", 'nf1Genotype', 'nf2Genotype',
+                          "studyName")
 
 plier_loadings <- read_feather("mp_loadings_tidy.feather") %>% 
   dplyr::group_by(lv) %>% 

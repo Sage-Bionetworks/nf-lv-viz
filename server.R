@@ -1,18 +1,34 @@
-shinyServer(function(input, output) {
-
-  grouping_var <- "tumorType"
+shinyServer(function(session, input, output) {
+  
   shape_var <- "isCellLine"
-  samp_metadata <- select(mp_dat, id, {{ grouping_var }},  {{ shape_var }}) %>% distinct()
-    
+  
+  samp_metadata <- eventReactive(input$group_var, {
+    grouping_var <- input$group_var
+    samp_metadata <- select(mp_dat, id, {{ grouping_var }},  {{ shape_var }}) %>% distinct()
+  })
+  
+  
+  observeEvent(input$group_var, {
+    grouping_var <- input$group_var
+    updateSelectInput(session, "grp_opts",
+                      label = NULL,
+                      selected = NULL,
+                      choices = mp_dat %>% 
+                        purrr::pluck(grouping_var) %>% 
+                        unique())
+  })
+  
   heatmap_dat <- eventReactive(input$goButton, {
     disable("goButton")
+    grouping_var <- input$group_var
     dat <- mp_dat %>%
-      dplyr::filter(tumorType %in% input$tums) %>% 
+      dplyr::filter(!!rlang::sym(grouping_var) %in% input$grp_opts) %>% 
       dplyr::select(latent_var, id, value) %>% 
       tidyr::spread(latent_var, value) %>% 
       tibble::column_to_rownames("id")
     enable("goButton")
     dat
+    
   })
   
     output$lv_heatmap <- renderHighchart2({
@@ -25,11 +41,13 @@ shinyServer(function(input, output) {
     })
     
     output$lv_pca <- renderPlot({
+      grouping_var <- input$group_var
+      metadata <- samp_metadata()
       
      pca <- prcomp(heatmap_dat())
      pca <- as.data.frame(pca$x) %>% 
        tibble::rownames_to_column("id") %>% 
-       left_join(samp_metadata) %>% 
+       left_join(metadata) %>% 
        select(PC1, PC2, {{ grouping_var }},  {{ shape_var }}, id)
      
      p <- ggplot(pca) + 
@@ -41,21 +59,28 @@ shinyServer(function(input, output) {
      p
      })
     
-    plot_dat <- eventReactive(input$lv_view, {
-      
-      mp_dat %>%
-        dplyr::filter(tumorType %in% input$tums)
+    plot_dat <- eventReactive({
+      input$lv_view
+      input$grp_opts
+      input$group_var
+      }, {
+      grouping_var <- input$group_var
+      dat <- mp_dat %>%
+        dplyr::filter(!!rlang::sym(grouping_var) %in% input$grp_opts) 
+      print(dat)
+      dat
     })
     
     output$individual_lv_dotplot <- renderPlot({
+      grouping_var <- input$group_var
       
       dotplot_data <- plot_dat() %>%
         dplyr::filter(latent_var == input$lv_view)
       
       anova_res <- "add 2 or more groups to perform anova"
-      
-      if(length(input$tums) > 1){
-        foo <- aov(value ~ get(grouping_var), data = dotplot_data) 
+
+      if(length(input$grp_opts) > 1){
+      foo <- aov(as.formula(sprintf("value ~ %s", grouping_var)), data = dotplot_data) 
         res <- summary(foo)[[1]][[1,"Pr(>F)"]] %>% 
           signif(., digits = 3)
         anova_res <- paste0("ANOVA p-value: ", res)
@@ -63,7 +88,7 @@ shinyServer(function(input, output) {
       
       p1 <- ggplot(data = dotplot_data %>%
                      filter(latent_var == input$lv_view) %>% 
-                     filter(tumorType %in% input$tums)) +
+                     filter(!!rlang::sym(grouping_var) %in% input$grp_opts)) +
         ggbeeswarm::geom_quasirandom(aes(x=reorder(latent_var, -sd_value), y = value , color = get(grouping_var), 
                                          group = get(grouping_var), 
                                          shape = get(shape_var)), dodge.width = 0.75) +

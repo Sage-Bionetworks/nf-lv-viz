@@ -3,13 +3,18 @@ dashboardPage(
     dashboardHeader(title = "braiNFood"),
 
     dashboardSidebar(
-            h5("Select tumor types:", align = 'center'),
-            selectizeInput("tums",
+        h5("Select grouping variable:", align = 'center'),
+        selectInput("group_var",
+                       label = NULL,
+                       selected = "tumorType",
+                       choices = grouping_var_options),
+            h5("Select groups:", align = 'center'),
+            selectizeInput("grp_opts",
                            label = NULL,
                            selected = NULL,
-                           choices = unique(unique(mp_dat$tumorType)),
+                           choices =NULL,
                            options = list(maxItems = 5, 
-                                          placeholder = 'type in a tumor type')),
+                                          placeholder = 'type in some categories')),
             actionButton("goButton", "Plot!")
         ),
 
