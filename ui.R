@@ -41,7 +41,7 @@ dashboardPage(
                              plotlyOutput("lv_loading_barplot") %>% withSpinner(),
                         width = 6)),
                        fluidRow(
-                           box("Drug Target Overlap: This module identifies molecules and the number of drug targets from those molecules that overlap with in the top 5% of gene loadings in the selected latent variable.", status = 'primary',
+                           box("Drug Target Overlap: This module identifies molecules with molecular targets that overlap with in the top 5% of gene loadings in the selected latent variable. Block size indicates the relative number of targets (hover to see exact number).", status = 'primary',
                                highchartOutput("druggable_lvs") %>% withSpinner(),
                         width = 12))
             ))
