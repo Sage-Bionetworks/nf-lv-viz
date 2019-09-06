@@ -11,10 +11,9 @@ dashboardPage(
             h5("Select groups:", align = 'center'),
             selectizeInput("grp_opts",
                            label = NULL,
-                           selected = NULL,
+                           selected = c("Cutaneous Neurofibroma", "Plexiform Neurofibroma"),
                            choices =NULL,
-                           options = list(maxItems = 5, 
-                                          placeholder = 'type in some categories')),
+                           options = list(placeholder = 'type in some categories')),
             actionButton("goButton", "Plot!")
         ),
 
