@@ -3,6 +3,11 @@ dashboardPage(
     dashboardHeader(title = "braiNFood"),
 
     dashboardSidebar(
+        h5("Select transfer learning method:", align = 'center'),
+        selectInput("method_var",
+                    label = NULL,
+                    selected = "MultiPLIER",
+                    choices = grouping_var_options),
         h5("Select grouping variable:", align = 'center'),
         selectInput("group_var",
                        label = NULL,
@@ -31,7 +36,7 @@ dashboardPage(
                          h5("Select a Latent Variable to Explore:"),
                          selectInput("lv_view", 
                         label = NULL,
-                        choices = unique(mp_dat$latent_var),
+                        choices = NULL,
                         multiple = FALSE),
                         fluidRow(
                             box("LV Expression by Sample: This module plots the expression of each LV grouped by biological sample." ,status = 'primary',

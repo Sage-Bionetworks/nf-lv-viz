@@ -1,27 +1,49 @@
 shinyServer(function(session, input, output) {
   
+  lv_dat_rct <- eventReactive(input$method_var, {
+    if(input$method_var=="MultiPLIER"){
+      plier
+    }
+    if(input$method_var=="CoGAPS"){
+      cogaps
+    }
+  })
+  
   shape_var <- "isCellLine"
   
   samp_metadata <- eventReactive(input$group_var, {
     grouping_var <- input$group_var
-    samp_metadata <- select(mp_dat, id, {{ grouping_var }},  {{ shape_var }}) %>% distinct()
+    lv_dat <- lv_dat_rct()
+    samp_metadata <- select(lv_dat[1], id, {{ grouping_var }},  {{ shape_var }}) %>% distinct()
   })
   
   
   observeEvent(input$group_var, {
+    lv_dat <- lv_dat_rct()
     grouping_var <- input$group_var
     updateSelectInput(session, "grp_opts",
                       label = NULL,
                       selected = NULL,
-                      choices = mp_dat %>% 
+                      choices = lv_dat[1] %>% 
                         purrr::pluck(grouping_var) %>% 
                         unique())
   })
   
+  observeEvent(input$method_var, {
+    lv_dat <- lv_dat_rct()
+    updateSelectInput(session, "lv_view",
+                      label = NULL,
+                      selected = NULL,
+                      choices = lv_dat[1] %>% 
+                        purrr::pluck(latent_var) %>% 
+                        unique())
+  })
+  
   heatmap_dat <- eventReactive(input$goButton, {
+    lv_dat <- lv_dat_rct()
     disable("goButton")
     grouping_var <- input$group_var
-    dat <- mp_dat %>%
+    dat <- lv_dat[1] %>%
       dplyr::filter(!!rlang::sym(grouping_var) %in% input$grp_opts) %>% 
       dplyr::select(latent_var, id, value) %>% 
       tidyr::spread(latent_var, value) %>% 
@@ -64,8 +86,9 @@ shinyServer(function(session, input, output) {
       input$grp_opts
       input$group_var
       }, {
+      lv_dat <- lv_dat_rct()
       grouping_var <- input$group_var
-      dat <- mp_dat %>%
+      dat <- lv_dat[1] %>%
         dplyr::filter(!!rlang::sym(grouping_var) %in% input$grp_opts) 
       print(dat)
       dat

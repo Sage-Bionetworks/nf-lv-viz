@@ -12,12 +12,20 @@ library(textshape)
 library(DT)
 
 mp_dat <- read_feather("filt_nf_mp_res.feather")
+co_dat <- read_feather("filt_nf_cogaps.feather")
 
 grouping_var_options <- c("tumorType", "diagnosis", "species", 
                           "isCellLine", 'nf1Genotype', 'nf2Genotype',
                           "studyName")
 
+method_options <- c("MultiPLIER", "CoGAPS")
+
 plier_loadings <- read_feather("mp_loadings_tidy.feather") %>% 
+  dplyr::group_by(lv) %>% 
+  filter(quantile(weight, 0.95)<weight) %>% 
+  ungroup()
+
+plier_loadings <- read_feather("cogaps_loadings_tidy.feather") %>% 
   dplyr::group_by(lv) %>% 
   filter(quantile(weight, 0.95)<weight) %>% 
   ungroup()
@@ -48,6 +56,10 @@ drug_targets <- drug_targets %>%
   ungroup()
 
 plier_loadings <- plier_loadings %>% left_join(drug_targets)
+cogaps_loadings <- cogaps_loadings %>% left_join(drug_targets)
+
+plier <- list(mp_dat, plier_loadings)
+cogaps <- list(co_dat, cogaps_loadings)
 
 thm <- hc_theme(
   chart = list(
