@@ -17,7 +17,7 @@ dashboardPage(
             selectizeInput("grp_opts",
                            label = NULL,
                            selected = NULL,
-                           choices =NULL,
+                           choices =  NULL,
                            options = list(maxItems = 5, 
                                           placeholder = 'type in some categories')),
             actionButton("goButton", "Plot!")

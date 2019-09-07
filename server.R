@@ -26,14 +26,16 @@ shinyServer(function(session, input, output) {
     input$group_var
     input$method_var
   }, {
+    
     lv_dat <- lv_dat_rct()
     grouping_var <- input$group_var
+    choices <- lv_dat[[1]] %>% 
+      purrr::pluck(grouping_var) %>% 
+      unique()
     updateSelectInput(session, "grp_opts",
                       label = NULL,
-                      selected = NULL,
-                      choices = lv_dat[[1]] %>% 
-                        purrr::pluck(grouping_var) %>% 
-                        unique())
+                      selected = choices[1],
+                      choices = choices)
   })
   
   observeEvent({
