@@ -160,8 +160,10 @@ shinyServer(function(session, input, output) {
         })
     
      output$druggable_lvs <- renderHighchart({
+       
+       lv_dat <- lv_dat_rct()
     
-       foo <- plier_loadings_individual_drugs %>% 
+       foo <- lv_dat[[3]] %>% 
          dplyr::filter(lv == input$lv_view) %>% 
          dplyr::count(std_name)
        
