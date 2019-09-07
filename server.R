@@ -1,32 +1,70 @@
 shinyServer(function(session, input, output) {
   
+  lv_dat_rct <- eventReactive({input$method_var}, {
+    if(input$method_var=="MultiPLIER"){
+      foo <- plier
+    }
+    if(input$method_var=="CoGAPS"){
+      foo <- cogaps
+    }
+    foo
+  })
+  
   shape_var <- "isCellLine"
   
-  samp_metadata <- eventReactive(input$group_var, {
+  samp_metadata <- eventReactive({
+    input$group_var
+    input$method_var
+    }, {
     grouping_var <- input$group_var
-    samp_metadata <- select(mp_dat, id, {{ grouping_var }},  {{ shape_var }}) %>% distinct()
+    lv_dat <- lv_dat_rct()
+    samp_metadata <- select(lv_dat[[1]], specimenID, {{ grouping_var }},  {{ shape_var }}) %>% distinct()
   })
   
   
-  observeEvent(input$group_var, {
+  observeEvent({
+    input$group_var
+    input$method_var
+  }, {
+    
+    lv_dat <- lv_dat_rct()
     grouping_var <- input$group_var
+    choices <- lv_dat[[1]] %>% 
+      purrr::pluck(grouping_var) %>% 
+      unique()
     updateSelectInput(session, "grp_opts",
                       label = NULL,
+                      selected = choices[1],
+                      choices = choices)
+  })
+  
+  observeEvent({
+    input$group_var
+    input$method_var
+  }, {
+    lv_dat <- lv_dat_rct()
+    updateSelectInput(session, "lv_view",
+                      label = NULL,
                       selected = NULL,
-                      choices = mp_dat %>% 
-                        purrr::pluck(grouping_var) %>% 
+                      choices = lv_dat[[1]] %>% 
+                        purrr::pluck('latent_var') %>% 
                         unique())
   })
   
-  heatmap_dat <- eventReactive(input$goButton, {
-    disable("goButton")
+  heatmap_dat <- eventReactive({
+    input$goButton
+    input$method_var
+    input$group_var
+    input$grp_opts
+    }, {
+    lv_dat <- lv_dat_rct()
     grouping_var <- input$group_var
-    dat <- mp_dat %>%
+    dat <- lv_dat[[1]] %>%
       dplyr::filter(!!rlang::sym(grouping_var) %in% input$grp_opts) %>% 
-      dplyr::select(latent_var, id, value) %>% 
+      dplyr::select(latent_var, specimenID, value) %>% 
       tidyr::spread(latent_var, value) %>% 
-      tibble::column_to_rownames("id")
-    enable("goButton")
+      tibble::column_to_rownames("specimenID")
+    
     dat
     
   })
@@ -46,9 +84,9 @@ shinyServer(function(session, input, output) {
       
      pca <- prcomp(heatmap_dat())
      pca <- as.data.frame(pca$x) %>% 
-       tibble::rownames_to_column("id") %>% 
+       tibble::rownames_to_column("specimenID") %>% 
        left_join(metadata) %>% 
-       select(PC1, PC2, {{ grouping_var }},  {{ shape_var }}, id)
+       select(PC1, PC2, {{ grouping_var }},  {{ shape_var }}, specimenID)
      
      p <- ggplot(pca) + 
        geom_point(aes(x = PC1, y = PC2, color = get(grouping_var), shape = get(shape_var))) +
@@ -64,10 +102,10 @@ shinyServer(function(session, input, output) {
       input$grp_opts
       input$group_var
       }, {
+      lv_dat <- lv_dat_rct()
       grouping_var <- input$group_var
-      dat <- mp_dat %>%
+      dat <- lv_dat[[1]] %>%
         dplyr::filter(!!rlang::sym(grouping_var) %in% input$grp_opts) 
-      print(dat)
       dat
     })
     
@@ -104,7 +142,9 @@ shinyServer(function(session, input, output) {
   
     output$lv_loading_barplot <- renderPlotly({
         
-        loadings <- plier_loadings %>%
+      lv_dat <- lv_dat_rct()
+      
+        loadings <- lv_dat[[2]] %>%
             dplyr::filter(lv == input$lv_view)  
         
   
@@ -120,8 +160,10 @@ shinyServer(function(session, input, output) {
         })
     
      output$druggable_lvs <- renderHighchart({
+       
+       lv_dat <- lv_dat_rct()
     
-       foo <- plier_loadings_individual_drugs %>% 
+       foo <- lv_dat[[3]] %>% 
          dplyr::filter(lv == input$lv_view) %>% 
          dplyr::count(std_name)
        

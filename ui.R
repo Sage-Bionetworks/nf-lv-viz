@@ -3,6 +3,11 @@ dashboardPage(
     dashboardHeader(title = "braiNFood"),
 
     dashboardSidebar(
+        h5("Select transfer learning method:", align = 'center'),
+        selectInput("method_var",
+                    label = NULL,
+                    selected = "MultiPLIER",
+                    choices = method_options),
         h5("Select grouping variable:", align = 'center'),
         selectInput("group_var",
                        label = NULL,
@@ -11,9 +16,10 @@ dashboardPage(
             h5("Select groups:", align = 'center'),
             selectizeInput("grp_opts",
                            label = NULL,
-                           selected = c("Cutaneous Neurofibroma", "Plexiform Neurofibroma"),
-                           choices =NULL,
-                           options = list(placeholder = 'type in some categories')),
+                           selected = NULL,
+                           choices =  NULL,
+                           options = list(maxItems = 5, 
+                                          placeholder = 'type in some categories')),
             actionButton("goButton", "Plot!")
         ),
 
@@ -21,16 +27,16 @@ dashboardPage(
                 shinyjs::useShinyjs(),
             tabsetPanel(
                 tabPanel(title = "Global Summary",
-                         fluidRow(box("Sample by LV Heatmap", status = 'primary',
+                         fluidRow(box("Sample by LV Heatmap: Zoom in to see more!", status = 'primary',
                          highchartOutput2("lv_heatmap") %>% withSpinner()),
-                         box("PCA of LVs", status = 'primary',
+                         box("PCA of LVs: Inspect the grouping of latent variables by sample type.", status = 'primary',
                          plotOutput("lv_pca") %>% withSpinner()
                          ))),
                 tabPanel(title = "Individual LVs",
                          h5("Select a Latent Variable to Explore:"),
                          selectInput("lv_view", 
                         label = NULL,
-                        choices = unique(mp_dat$latent_var),
+                        choices = NULL,
                         multiple = FALSE),
                         fluidRow(
                             box("LV Expression by Sample: This module plots the expression of each LV grouped by biological sample." ,status = 'primary',
