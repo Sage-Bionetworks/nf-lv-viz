@@ -266,6 +266,7 @@ This chunk processes Aaron Baker's analysis of the data using CoGAPS into a tidy
 library(tidyverse)
 cogaps_60 <- synGet('syn20689878')$path %>% readr::read_csv()
 
+
 cogaps_tidy <- cogaps_60  %>% 
   gather(key = "latent_var", value = "value", -X1) %>% 
   set_names(c("specimenID", "latent_var", "value"))
@@ -281,7 +282,6 @@ cogaps_tidy <- cogaps_tidy %>%
   left_join(metadata) %>% 
   mutate(id = used) %>% select(-used)
   
-
 cogaps_loadings <- synGet('syn20633784')$path %>% readr::read_csv() %>% 
     gather(key = "lv", value = "weight", -X1) %>% 
   set_names(c("gene", "lv", "weight")) 

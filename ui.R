@@ -7,7 +7,7 @@ dashboardPage(
         selectInput("method_var",
                     label = NULL,
                     selected = "MultiPLIER",
-                    choices = grouping_var_options),
+                    choices = method_options),
         h5("Select grouping variable:", align = 'center'),
         selectInput("group_var",
                        label = NULL,
@@ -27,9 +27,9 @@ dashboardPage(
                 shinyjs::useShinyjs(),
             tabsetPanel(
                 tabPanel(title = "Global Summary",
-                         fluidRow(box("Sample by LV Heatmap", status = 'primary',
+                         fluidRow(box("Sample by LV Heatmap: Zoom in to see more!", status = 'primary',
                          highchartOutput2("lv_heatmap") %>% withSpinner()),
-                         box("PCA of LVs", status = 'primary',
+                         box("PCA of LVs: Inspect the grouping of latent variables by sample type.", status = 'primary',
                          plotOutput("lv_pca") %>% withSpinner()
                          ))),
                 tabPanel(title = "Individual LVs",
