@@ -19,5 +19,4 @@ RUN R -e "install.packages('feather')"
 ## install cran packages
 RUN R -e "devtools::install_github("wgmao/PLIER")"
 
-
-RUN wget https://raw.githubusercontent.com/Sage-Bionetworks/nf-hackathon-2019/master/R_demos/0-setup.Rmd
+COPY setup.R /home/rstudio/setup.R
