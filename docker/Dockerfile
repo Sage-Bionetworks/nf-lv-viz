@@ -17,6 +17,6 @@ RUN R -e "BiocManager::install(c('tximport', 'org.Hs.eg.db'))"
 RUN R -e "install.packages('feather')"
 
 ## install cran packages
-RUN R -e "devtools::install_github("wgmao/PLIER")"
+RUN R -e "devtools::install_github('wgmao/PLIER')"
 
 COPY setup.R /home/rstudio/setup.R
