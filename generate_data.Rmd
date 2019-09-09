@@ -12,8 +12,10 @@ output:
 
 ```{r setup}
 library(tximport)
-library(dplyr)
+library(tidyverse)
+library(feather)
 library(synapser)
+library(org.Hs.eg.db)
 ```
 
 ## Login to Synapse
@@ -25,7 +27,6 @@ synLogin()
 ## Get annotation maps and multiPLIER code
 
 ```{r}
-library(org.Hs.eg.db)
 source('https://raw.githubusercontent.com/greenelab/multi-plier/7c56a2867f9f08f7bcd3617875c7c2dbe886cbeb/util/plier_util.R')
 
 plier_model <- readr::read_rds(synGet("syn18689545")$path)
@@ -46,7 +47,8 @@ metadata <- synTableQuery("SELECT * FROM syn16858331 where fileFormat = 'sf' and
 metadata$isCellLine <- toupper(metadata$isCellLine)
 
 rownames(metadata) <- metadata$id
-  
+
+metadata[is.na(metadata)] <- "NA"
 
 salmon_entities <- sapply(metadata$id, synGet)
 
@@ -108,8 +110,6 @@ mp_res <- GetNewDataB(abundance_filt_cutoff, plier_model)
 Most of the latent variables have low standard deviation across this cohort of samples, and thus are probably not interesting for comparing across or within tumor groups. A cutoff of SD > 0.075 seems to be a reasonable cutoff to filter out the least variable LVs. 
 
 ```{r}
-library(ggplot2)
-
 mp_res_tidy <- mp_res %>% 
   as.data.frame(.) %>% 
   tibble::rownames_to_column('latent_var') %>% 
@@ -231,7 +231,6 @@ for(i in unique(mp_res_tidy_filt$latent_var)){
 
 }
 
-library(feather)
 
 mp_res_tidy_filt %>% 
   mutate(tumorType = case_when(is.na(tumorType) ~ "non-tumor", 
@@ -239,8 +238,6 @@ mp_res_tidy_filt %>%
   write_feather("filt_nf_mp_res.feather")
 plier_loadings_df %>% write_feather("mp_loadings.feather")
 
-
-library(tidyverse)
 
 tidy_loadings <- plier_loadings_df %>% 
   tibble::rownames_to_column("gene") %>% 
@@ -263,7 +260,6 @@ write_feather(drug_targets, 'dtex_targets.feather')
 This chunk processes Aaron Baker's analysis of the data using CoGAPS into a tidy dataset compatible with the nf-lv-viz app.
 
 ```{r}
-library(tidyverse)
 cogaps_60 <- synGet('syn20689878')$path %>% readr::read_csv()
 
 
@@ -315,8 +311,6 @@ ggplot(data = cogaps_cor_tidy) +
 high_cor_rm <- cogaps_cor_tidy %>% filter(cor > 0.5 & high_sd == TRUE) %>% group_by(cor) %>% dplyr::slice(2) %>% ungroup()
 
 cogaps_tidy_filt <- filter(cogaps_tidy, !latent_var %in% high_cor_rm$lv1)
-
-library(feather)
 
 cogaps_tidy_filt %>% 
   mutate(tumorType = case_when(is.na(tumorType) ~ "non-tumor", 
