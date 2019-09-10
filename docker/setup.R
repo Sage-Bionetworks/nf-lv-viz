@@ -13,7 +13,7 @@ creds <- paste0("[authentication]\n",
                 "password = ", password)
 
 #uncomment this line
-#writeLines(creds, "~/.synapseConfig")
+writeLines(creds, "~/.synapseConfig")
 
 ## Testing your configuration file
 # Let's check that this worked by loading the `synapser` client and logging in. Uncomment 
@@ -22,3 +22,9 @@ creds <- paste0("[authentication]\n",
 library(synapser)
 synLogin()
 
+##and config git profile
+git_email <- "a@b.com"
+git_name <- "Doug Funnie"
+
+system2("git", args = sprintf("config --global user.email '%s'", git_email))
+system2("git", args = sprintf("config --global user.name '%s'", git_name))

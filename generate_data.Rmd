@@ -267,16 +267,23 @@ cogaps_tidy <- cogaps_60  %>%
   gather(key = "latent_var", value = "value", -X1) %>% 
   set_names(c("specimenID", "latent_var", "value"))
 
-metadata <- synTableQuery('SELECT distinct specimenID, parent, individualID, assay, dataType, sex, consortium, study, diagnosis, tumorType, species, fundingAgency, resourceType, nf1Genotype, nf2Genotype, studyName, used, age, isCellLine, experimentalCondition, transplantationType FROM syn20449214')$asDataFrame() %>% 
-  filter(!(specimenID == '2-001 Plexiform Neurofibroma' & is.na(used)))
+source_metadata <- synTableQuery('SELECT distinct specimenID, used FROM syn20449214')$asDataFrame()
+
+other_metadata <- synTableQuery("SELECT distinct specimenID, individualID, assay, dataType, sex, consortium, diagnosis, tumorType, species, fundingAgency, resourceType, nf1Genotype, nf2Genotype, studyName, age, isCellLine, cellType, modelOf FROM syn16858331 where fileFormat = 'sf' and accessType in ('PUBLIC','REQUEST ACCESS')")$asDataFrame() %>% 
+  group_by(specimenID) %>% 
+  dplyr::slice(1) %>% 
+  ungroup()
 
 cogaps_tidy <- cogaps_tidy %>% 
+  left_join(source_metadata) %>% 
+  filter(!(specimenID == '2-001 Plexiform Neurofibroma' & is.na(used))) %>% 
+  left_join(other_metadata) %>% 
   group_by(latent_var) %>% 
   mutate(sd_value = sd(value)) %>% 
   ungroup() %>% 
   mutate(trunc_label = stringr::str_trunc(latent_var, 10, "right")) %>% 
-  left_join(metadata) %>% 
-  mutate(id = used) %>% select(-used)
+  mutate(id = used) %>% 
+  dplyr::select(-used)
   
 cogaps_loadings <- synGet('syn20633784')$path %>% readr::read_csv() %>% 
     gather(key = "lv", value = "weight", -X1) %>% 
@@ -322,7 +329,7 @@ tidy_loadings <- cogaps_loadings %>%
   
 write_feather(tidy_loadings, "cogaps_loadings_tidy.feather")
 
-```
+g```
 
 This chunk processes Aaron Baker's analysis of the data using Pathway-regularized matrix factorization into a tidy dataset compatible with the nf-lv-viz app.
 
