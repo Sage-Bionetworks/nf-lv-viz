@@ -20,3 +20,4 @@ RUN R -e "install.packages('feather')"
 RUN R -e "devtools::install_github('wgmao/PLIER')"
 
 COPY setup.R /home/rstudio/setup.R
+COPY generate_data.Rmd /home/rstudio/generate_data.Rmd

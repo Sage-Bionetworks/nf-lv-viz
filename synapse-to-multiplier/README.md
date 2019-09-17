@@ -1,0 +1,1 @@
+This is a yet to be finalized app that will let people upload datasets and get multiplier results back. I stopped working on it at the time being because the userbase is not clearly defined, so this might not be the best solution. 

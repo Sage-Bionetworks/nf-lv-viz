@@ -11,11 +11,11 @@ library(shinycssloaders)
 library(textshape)
 library(DT)
 
-mp_dat <- read_feather("filt_nf_mp_res.feather") %>% 
+mp_dat <- read_feather("data/filt_nf_mp_res.feather") %>% 
   group_by(specimenID, latent_var) %>%  ##short term fix for duplicated analyses
   slice(1)
 
-co_dat <- read_feather("filt_nf_cogaps.feather")
+co_dat <- read_feather("data/filt_nf_cogaps.feather")
 
 grouping_var_options <- c("tumorType", "diagnosis", "species", 
                           "isCellLine", 'nf1Genotype', 'nf2Genotype',
@@ -23,17 +23,17 @@ grouping_var_options <- c("tumorType", "diagnosis", "species",
 
 method_options <- c("MultiPLIER", "CoGAPS")
 
-plier_loadings <- read_feather("mp_loadings_tidy.feather") %>% 
+plier_loadings <- read_feather("data/mp_loadings_tidy.feather") %>% 
   dplyr::group_by(lv) %>% 
   filter(quantile(weight, 0.95)<weight) %>% 
   ungroup()
 
-cogaps_loadings <- read_feather("cogaps_loadings_tidy.feather") %>% 
+cogaps_loadings <- read_feather("data/cogaps_loadings_tidy.feather") %>% 
   dplyr::group_by(lv) %>% 
   filter(quantile(weight, 0.95)<weight) %>% 
   ungroup()
 
-drug_targets <- read_feather('dtex_targets.feather') 
+drug_targets <- read_feather('data/dtex_targets.feather') 
 
 drug_targets <- drug_targets %>% 
   filter(mean_pchembl > 8) %>% 
