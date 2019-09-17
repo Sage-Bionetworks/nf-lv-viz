@@ -19,7 +19,7 @@ co_dat <- read_feather("filt_nf_cogaps.feather")
 
 grouping_var_options <- c("tumorType", "diagnosis", "species", 
                           "isCellLine", 'nf1Genotype', 'nf2Genotype',
-                          "studyName")
+                          "studyName", "cellType", "modelOf")
 
 method_options <- c("MultiPLIER", "CoGAPS")
 
