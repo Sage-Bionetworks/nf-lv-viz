@@ -134,7 +134,7 @@ It is probably a safe assumption that (at least for subtyping these tumors), the
 ```{r}
 
 mp_res_tidy_filt <- mp_res_tidy %>% 
-  filter(sd_value > 0.00) ##no cutoff for the time being
+  filter(sd_value > 0.05) ##no cutoff for the time being
 
 mp_res_filt <- mp_res[rownames(mp_res) %in% unique(mp_res_tidy_filt$latent_var),]
 
@@ -325,7 +325,7 @@ cogaps_tidy_filt <- filter(cogaps_tidy, !latent_var %in% high_cor_rm$lv1)
 cogaps_tidy_filt %>% 
   mutate(tumorType = case_when(is.na(tumorType) ~ "non-tumor", 
                                !is.na(tumorType) ~ tumorType)) %>% 
-  write_feather("filt_nf_cogaps.feather")
+  write_feather("../data/filt_nf_cogaps.feather")
 
 tidy_loadings_cogaps <- cogaps_loadings %>% 
   filter(weight > 0)
