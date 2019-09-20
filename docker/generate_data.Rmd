@@ -11,6 +11,7 @@ output:
 # Setup
 
 ```{r setup}
+library(PLIER)
 library(tximport)
 library(tidyverse)
 library(feather)
@@ -133,7 +134,7 @@ It is probably a safe assumption that (at least for subtyping these tumors), the
 ```{r}
 
 mp_res_tidy_filt <- mp_res_tidy %>% 
-  filter(sd_value > 0.05)
+  filter(sd_value > 0.00) ##no cutoff for the time being
 
 mp_res_filt <- mp_res[rownames(mp_res) %in% unique(mp_res_tidy_filt$latent_var),]
 
@@ -285,7 +286,7 @@ cogaps_tidy <- cogaps_tidy %>%
   ungroup() %>% 
   mutate(trunc_label = stringr::str_trunc(latent_var, 10, "right")) %>% 
   mutate(id = used) %>% 
-  dplyr::select(-used)
+  dplyr::select(-used) 
   
 cogaps_loadings <- synGet('syn20633784')$path %>% readr::read_csv() %>% 
     gather(key = "lv", value = "weight", -X1) %>% 
@@ -295,7 +296,7 @@ ggplot(data= cogaps_tidy %>% dplyr::select(latent_var,sd_value) %>% distinct()) 
   geom_histogram(aes(x=sd_value))
 
 ggplot(data = cogaps_tidy) +
-  geom_boxplot(aes(x=reorder(trunc_label, -sd_value), y = value, color = sd_value > 0.075))
+  geom_boxplot(aes(x=reorder(trunc_label, -sd_value), y = value, color = sd_value > 0.05))
 
 cogaps_loadings_mat <- synGet('syn20633784')$path %>% 
   readr::read_csv() %>% 
@@ -326,35 +327,81 @@ cogaps_tidy_filt %>%
                                !is.na(tumorType) ~ tumorType)) %>% 
   write_feather("filt_nf_cogaps.feather")
 
-tidy_loadings <- cogaps_loadings %>% 
+tidy_loadings_cogaps <- cogaps_loadings %>% 
   filter(weight > 0)
   
-write_feather(tidy_loadings, "../data/cogaps_loadings_tidy.feather")
+write_feather(tidy_loadings_cogaps, "../data/cogaps_loadings_tidy.feather")
 
 ```
 
 This chunk processes Aaron Baker's analysis of the data using Pathway-regularized matrix factorization into a tidy dataset compatible with the nf-lv-viz app.
 
-not currently ready
 
 ```{r}
-# 
-# prmf_ <- synGet('syn20689878')$path %>% readr::read_csv()
-# 
-# cogaps_tidy <- cogaps_60  %>% 
-#   gather(key = "latent_var", value = "value", -X1) %>% 
-#   set_names(c("specimenID", "latent_var", "value"))
-# 
-# metadata <- synTableQuery('SELECT distinct specimenID, parent, individualID, assay, dataType, sex, consortium, study, diagnosis, tumorType, species, fundingAgency, resourceType, nf1Genotype, nf2Genotype, studyName, used, age, isCellLine, experimentalCondition, transplantationType FROM syn20449214')$asDataFrame() %>% 
-#   filter(!(specimenID == '2-001 Plexiform Neurofibroma' & is.na(used)))
-# 
-# cogaps_tidy <- left_join(cogaps_tidy, metadata) %>% 
-#   mutate(trunc_label = stringr::str_trunc(latent_var, 10, "right")) %>% 
-#   mutate(id = used) %>% select(-used)
-# 
-# cogaps_loadings <- synGet('syn20633784')$path %>% readr::read_csv() %>% 
-#     gather(key = "lv", value = "weight", -X1) %>% 
-#   set_names(c("gene", "lv", "weight")) 
+ 
+prmf <- synGet('syn20687978')$path %>% readr::read_csv()
+ 
+prmf_tidy <- prmf  %>% 
+  set_names(c('specimenID', 1:10)) %>% 
+   gather(key = "latent_var", value = "value", -specimenID) %>% 
+   set_names(c("specimenID", "latent_var", "value"))
+
+
+metadata <- synTableQuery('SELECT distinct specimenID, parent, individualID, assay, dataType, sex, consortium, study, diagnosis, tumorType, species, fundingAgency, resourceType, nf1Genotype, nf2Genotype, studyName, used, age, isCellLine, experimentalCondition, transplantationType FROM syn20449214')$asDataFrame() %>% 
+   filter(!(specimenID == '2-001 Plexiform Neurofibroma' & is.na(used)))
+
+prmf_tidy <- left_join(prmf_tidy, metadata) %>% 
+   mutate(latent_var = paste0('prmf_', latent_var)) %>% 
+   mutate(id = used) %>% dplyr::select(-used)
+ 
+prmf_loadings <- synGet('syn20687973')$path %>% readr::read_csv() %>% 
+     gather(key = "lv", value = "weight", -gene) %>% 
+     mutate(lv = paste0('prmf_', lv)) %>% 
+  inner_join(y = mapped_df, by = c("gene" = "ENSEMBL")) %>% 
+  dplyr::select(SYMBOL, lv, weight) %>% 
+   set_names(c("gene", "lv", "weight")) %>% 
+    filter(!is.na(gene)) 
+
+prmf_cor <- cor(synGet('syn20687973')$path %>% readr::read_csv() %>% dplyr::select(-gene))  
+
+interesting_lvs <- prmf_loadings$lv
+
+prmf_cor_tidy <- prmf_cor %>% 
+  as.data.frame() %>% 
+  tibble::rownames_to_column('lv1') %>% 
+  tidyr::gather("lv2","cor",-lv1) %>% 
+  filter(lv1 != lv2) %>% 
+  distinct() %>%
+  mutate(high_sd=case_when((lv1 %in% interesting_lvs & lv2 %in% interesting_lvs) ~ TRUE,
+                               (!lv1 %in% interesting_lvs | !lv2 %in% interesting_lvs) ~ FALSE))
+
+ggplot(data = prmf_cor_tidy) + 
+  geom_density(aes(x = cor, color = high_sd))
+
+high_cor_rm <- prmf_cor_tidy %>% filter(cor > 0.5 & high_sd == TRUE) %>% group_by(cor) %>% dplyr::slice(2) %>% ungroup()
+
+prmf_tidy_filt <- filter(prmf_tidy, !latent_var %in% high_cor_rm$lv1) %>% 
+    write_feather("../data/filt_nf_prmf.feather")
+
+write_feather(prmf_loadings, "../data/prmf_loadings_tidy.feather")
+
+```
+
+## summary stats
+```{r}
+cogaps <- length(unique(cogaps_tidy_filt$latent_var))
+  
+meangene_cg <- tidy_loadings_cogaps %>% group_by(lv) %>% summarize(n=n()) %>% ungroup() %>% summarize(mean(n),sd(n))
+
+m_plier <- length(unique(mp_res_tidy_filt$latent_var))
+
+meangene_mp <- tidy_loadings %>% group_by(lv) %>% summarize(n=n()) %>% ungroup() %>% summarize(mean(n),sd(n))
+  
+prmf_stat <- length(unique(prmf_tidy_filt$latent_var))
+
+meangene_prmf <-prmf_loadings %>% group_by(lv) %>% summarize(n=n()) %>% ungroup() %>% summarize(mean(n),sd(n))
+  
+
 
 ```
 
