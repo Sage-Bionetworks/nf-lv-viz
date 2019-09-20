@@ -9,6 +9,7 @@ library(ggbeeswarm)
 library(highcharter)
 library(shinycssloaders)
 library(textshape)
+library(emojifont)
 library(DT)
 
 mp_dat <- read_feather("data/filt_nf_mp_res.feather") %>% 
@@ -17,11 +18,13 @@ mp_dat <- read_feather("data/filt_nf_mp_res.feather") %>%
 
 co_dat <- read_feather("data/filt_nf_cogaps.feather")
 
+pr_dat <- read_feather("data/filt_nf_prmf.feather")
+
 grouping_var_options <- c("tumorType", "diagnosis", "species", 
                           "isCellLine", 'nf1Genotype', 'nf2Genotype',
                           "studyName", "cellType", "modelOf")
 
-method_options <- c("MultiPLIER", "CoGAPS")
+method_options <- c("MultiPLIER", "CoGAPS", "PRMF")
 
 plier_loadings <- read_feather("data/mp_loadings_tidy.feather") %>% 
   dplyr::group_by(lv) %>% 
@@ -29,6 +32,11 @@ plier_loadings <- read_feather("data/mp_loadings_tidy.feather") %>%
   ungroup()
 
 cogaps_loadings <- read_feather("data/cogaps_loadings_tidy.feather") %>% 
+  dplyr::group_by(lv) %>% 
+  filter(quantile(weight, 0.95)<weight) %>% 
+  ungroup()
+
+prmf_loadings <- read_feather("data/prmf_loadings_tidy.feather") %>% 
   dplyr::group_by(lv) %>% 
   filter(quantile(weight, 0.95)<weight) %>% 
   ungroup()
@@ -59,6 +67,15 @@ cogaps_loadings_individual_drugs <- cogaps_loadings %>%
   ungroup() %>% 
   select(lv, gene, druggable_targets_in_lv, std_name) %>% 
   distinct()
+
+prmf_loadings_individual_drugs <- prmf_loadings %>% 
+  left_join(drug_targets) %>% 
+  dplyr::group_by(lv) %>% 
+  filter(!is.na(std_name)) %>% 
+  mutate(druggable_targets_in_lv = sum(!is.na(std_name))) %>% 
+  ungroup() %>% 
+  select(lv, gene, druggable_targets_in_lv, std_name) %>% 
+  distinct()
   
 drug_targets <- drug_targets %>% 
   summarise(std_name = paste(std_name, collapse=" ")) %>% 
@@ -69,10 +86,12 @@ drug_targets <- drug_targets %>%
 
 plier_loadings <- plier_loadings %>% left_join(drug_targets)
 cogaps_loadings <- cogaps_loadings %>% left_join(drug_targets)
+prmf_loadings <- prmf_loadings %>% left_join(drug_targets)
 
 plier <- list(mp_dat, plier_loadings, plier_loadings_individual_drugs)
 cogaps <- list(co_dat, cogaps_loadings, cogaps_loadings_individual_drugs)
-
+prmf <- list(pr_dat, prmf_loadings, prmf_loadings_individual_drugs)
+  
 thm <- hc_theme(
   chart = list(
     backgroundColor = NULL,

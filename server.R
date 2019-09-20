@@ -7,6 +7,9 @@ shinyServer(function(session, input, output) {
     if(input$method_var=="CoGAPS"){
       foo <- cogaps
     }
+    if(input$method_var=="PRMF"){
+      foo <- prmf
+    }
     foo
   })
   
@@ -53,9 +56,6 @@ shinyServer(function(session, input, output) {
   
   heatmap_dat <- eventReactive({
     input$goButton
-    input$method_var
-    input$group_var
-    input$grp_opts
     }, {
     lv_dat <- lv_dat_rct()
     grouping_var <- input$group_var
@@ -98,9 +98,7 @@ shinyServer(function(session, input, output) {
      })
     
     plot_dat <- eventReactive({
-      input$lv_view
-      input$grp_opts
-      input$group_var
+      input$goButton
       }, {
       lv_dat <- lv_dat_rct()
       grouping_var <- input$group_var
@@ -134,6 +132,7 @@ shinyServer(function(session, input, output) {
         scale_color_discrete(name = {{grouping_var}}) +
         scale_shape_discrete(name = {{shape_var}}) +
         theme(axis.text.x = element_text(size = 10, angle = 0)) +
+        theme(plot.title = element_text(face = "bold", color = "red")) +
         labs(x = "", y = "LV expression", title = anova_res)
     
       p1
