@@ -13,6 +13,23 @@ shinyServer(function(session, input, output) {
     foo
   })
   
+  output$app_basics <- renderUI(h6("The purpose of this tool is to explore expression profiles of latent variables in neurofibromatosis and schwannomatosis tumors and cell line models. Generally speaking, a latent variable
+                                   is a weighted combination of genes that in combination may represent known biological pathways, novel biological mechanisms, or other complex gene-gene relationships. For this analysis, all 
+                                   latent variables were identified using a large RNAseq dataset representative of many types of human tissues and conditions. The expression of these variables was then assessed in harmonized NF expression data. 
+                                   To perform your own analysis, first select a method (MultiPLIER, CoGAPS, or PRMF), and then select a grouping variable. This variable will be the basis for building a cohort and comparing expression across groups.
+                                   Then, begin typing in the 'Select groups:' box to add groups of samples to your cohort. Then hit Plot! On the global tab, this will generate a heatmap of latent variables by sample and a principal components analysis
+                                   of these data. On the Individual LV's tab, you can dive into the expression of individual latent variables in the data,
+                                   and explore which genes in the latent variables are druggable. "))
+ 
+  output$data_ctb <- renderUI(h6(HTML("This analysis used RNASeq data from these contributors: <br>
+    -The Synodos for NF2 Consortium (James Gusella, MGH; Gary Johnson, UNC) <br>
+    -David Largaespada, Masonic Cancer Center, University of Minnesota <br>
+    -Angela Hirbe, Washington University School of Medicine in St Louis <br>
+    -Christine Pratilas, Johns Hopkins <br>
+    -Antonio Iaverone, Columbia University <br>
+    -Margaret (Peggy) Wallace, University of Florida  <br>
+    -Adam Resnick, University of Pennsylvania <br>")))
+  
   shape_var <- "isCellLine"
   
   samp_metadata <- eventReactive({

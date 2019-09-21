@@ -49,6 +49,16 @@ dashboardPage(
                            box("Drug Target Overlap: This module identifies molecules with molecular targets that overlap with in the top 5% of gene loadings in the selected latent variable. Block size indicates the relative number of targets (hover to see exact number).", status = 'primary',
                                highchartOutput("druggable_lvs") %>% withSpinner(),
                         width = 12))
-            ))
+            ),
+            tabPanel(title = "Using this App",
+                     fluidRow(
+                         box("Basics" ,status = 'primary',
+                             uiOutput("app_basics"),
+                             width = 6),
+                         box("Data Contributors" ,status = 'primary',
+                             uiOutput("data_ctb"),
+                             width = 6))
+            )
+            )
     )
 )
