@@ -28,7 +28,7 @@ dashboardPage(
             tabsetPanel(
                 tabPanel(title = "Global Summary",
                          fluidRow(box("Sample by LV Heatmap: Zoom in to see more!", status = 'primary',
-                         highchartOutput2("lv_heatmap") %>% withSpinner()),
+                         highchartOutput("lv_heatmap") %>% withSpinner()),
                          box("PCA of LVs: Inspect the grouping of latent variables by sample type.", status = 'primary',
                          plotOutput("lv_pca") %>% withSpinner()
                          ))),
