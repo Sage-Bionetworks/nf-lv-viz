@@ -32,6 +32,11 @@ jobs:
           install.packages(c('renv'))
           renv::restore()
           install.packages('rsconnect')
+          install.packages(c('synapser','synapserutils'), repos=c('http://ran.synapse.org', 'http://cran.fhcrc.org'))
+          install.packages('BiocManager')
+          BiocManager::install(c('tximport', 'org.Hs.eg.db'))
+          install.packages('feather')
+          devtools::install_github('wgmao/PLIER')
         shell: sudo Rscript {0}
 
       - name: Deploy app
