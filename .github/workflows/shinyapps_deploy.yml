@@ -35,7 +35,7 @@ jobs:
           install.packages(c('synapser','synapserutils'), repos=c('http://ran.synapse.org', 'http://cran.fhcrc.org'))
           install.packages('BiocManager')
           BiocManager::install(c('tximport', 'org.Hs.eg.db'))
-          install.packages('feather')
+          install.packages(c('feather', 'devtools'))
           devtools::install_github('wgmao/PLIER')
         shell: sudo Rscript {0}
 
