@@ -31,6 +31,7 @@ jobs:
           # running this step as 'sudo' is necessary to be able to install packages in default library
           install.packages(c('renv'))
           renv::restore()
+          install.packages('devtools')
           install.packages('rsconnect')
           install.packages(c('synapser','synapserutils'), repos=c('http://ran.synapse.org', 'http://cran.fhcrc.org'))
           install.packages('BiocManager')
