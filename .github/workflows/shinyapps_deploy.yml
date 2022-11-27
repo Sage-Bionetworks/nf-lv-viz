@@ -37,6 +37,7 @@ jobs:
           BiocManager::install(c('tximport', 'org.Hs.eg.db'))
           install.packages(c('feather', 'devtools'))
           devtools::install_github('wgmao/PLIER')
+          renv::isolate()
         shell: sudo Rscript {0}
 
       - name: Deploy app
