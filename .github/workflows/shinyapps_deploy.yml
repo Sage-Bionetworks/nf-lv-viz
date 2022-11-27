@@ -20,6 +20,8 @@ jobs:
           sudo apt-get update
           # The rsconnect R package needs cUrl.  This app needs the Java JDK (runtime AND compiler).
           sudo apt-get install -y libcurl4-openssl-dev default-jdk
+          # fix for devtools https://github.com/r-lib/devtools/issues/2131
+          sudo apt-get install build-essential libcurl4-gnutls-dev libxml2-dev libssl-dev 
  
       - uses: actions/checkout@v2
         
