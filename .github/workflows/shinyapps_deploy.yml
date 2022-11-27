@@ -33,10 +33,9 @@ jobs:
           renv::restore()
           install.packages('devtools')
           install.packages('rsconnect')
-          install.packages(c('synapser','synapserutils'), repos=c('http://ran.synapse.org', 'http://cran.fhcrc.org'))
+          install.packages(c('synapser','synapserutils', 'feather'), repos=c('http://ran.synapse.org', 'http://cran.fhcrc.org'))
           install.packages('BiocManager')
           BiocManager::install(c('tximport', 'org.Hs.eg.db'))
-          install.packages(c('feather', 'devtools'))
           devtools::install_github('wgmao/PLIER')
           renv::isolate()
         shell: sudo Rscript {0}
