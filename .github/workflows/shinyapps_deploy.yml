@@ -34,16 +34,16 @@ jobs:
              getOption("repos")))
           install.packages('BiocManager')
           options(repos = c(BiocManager::repositories(),  getOption("repos")))
-          # running this step as 'sudo' is necessary to be able to install packages in default library
-          install.packages(c('renv'))
-          renv::restore()
+          # install.packages(c('renv')) TODO remove dead code
+          # renv::restore() TODO remove dead code
           install.packages('devtools')
           install.packages('rsconnect')
           install.packages(c('synapser','synapserutils', 'feather'))
           install.packages('BiocManager')
           BiocManager::install(c('tximport', 'org.Hs.eg.db'))
           devtools::install_github('wgmao/PLIER')
-          renv::isolate()
+          # renv::isolate() TODO remove dead code
+          # running this step as 'sudo' is necessary to be able to install packages in default library
         shell: sudo Rscript {0}
 
       - name: Deploy app
