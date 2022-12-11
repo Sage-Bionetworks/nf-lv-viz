@@ -28,20 +28,15 @@ jobs:
         
       - name: Install R packages
         run: |
-          # The binary package distributions from R Studio dramatically speed up installation time
-          options(repos = c(REPO_NAME = "https://packagemanager.rstudio.com/all/__linux__/focal/latest",
-             'http://ran.synapse.org', 'http://cran.fhcrc.org', getOption("repos")))
+          options(repos = c('http://ran.synapse.org', 'http://cran.fhcrc.org', getOption("repos")))
+          install.packages(c('synapser','synapserutils'))
           install.packages('BiocManager')
           options(repos = c(BiocManager::repositories(),  getOption("repos")))
-          # install.packages(c('renv')) TODO remove dead code
-          # renv::restore() TODO remove dead code
           install.packages('devtools')
           install.packages('rsconnect')
-          install.packages(c('synapser','synapserutils', 'feather'))
-          install.packages('BiocManager')
+          install.packages(c('feather'))
           BiocManager::install(c('tximport', 'org.Hs.eg.db'))
           devtools::install_github('wgmao/PLIER')
-          # renv::isolate() TODO remove dead code
           # running this step as 'sudo' is necessary to be able to install packages in default library
         shell: sudo Rscript {0}
 
