@@ -29,12 +29,12 @@ jobs:
       - name: Install R packages
         run: |
           Sys.setenv(GITHUB_PAT="${{ secrets.pat_for_shinyapps_action }}")
-          options(repos = c('http://ran.synapse.org', 'http://cran.fhcrc.org', getOption("repos")))
+          options(repos = c('http://cran.fhcrc.org', getOption("repos")))
           install.packages('BiocManager')
           options(repos = c(BiocManager::repositories(),  getOption("repos")))
           install.packages('devtools')
           install.packages('rsconnect')
-          install.packages(c('feather', 'reticulate'))
+          install.packages(c('feather', 'reticulate', 'DT', 'TTR', 'XML', 'assertthat', 'backports', 'beeswarm', 'data.table', 'dplyr'))
           BiocManager::install(c('tximport', 'org.Hs.eg.db'))
           devtools::install_github('wgmao/PLIER')
           # running this step as 'sudo' is necessary to be able to install packages in default library
@@ -42,6 +42,8 @@ jobs:
 
       - name: Deploy app
         run: |
+          options(repos = c('http://cran.fhcrc.org', BiocManager::repositories(), getOption("repos")))
+ 
           branch<-Sys.getenv("GITHUB_REF_NAME")
           repo<-Sys.getenv("GITHUB_REPOSITORY")
           appName<-strsplit(repo, "/")[[1]][2]
