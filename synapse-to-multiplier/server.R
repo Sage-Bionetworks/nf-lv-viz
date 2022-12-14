@@ -1,5 +1,4 @@
 library(shiny)
-library(synapser)
 library(DT)
 
 shinyServer(function(input, output, session) {
@@ -7,15 +6,15 @@ shinyServer(function(input, output, session) {
   # session$sendCustomMessage(type="readCookie", message=list())
   
   # foo <- observeEvent(input$cookie, {
-    synLogin()
+    synapse$login()
     # synLogin(sessionToken=input$cookie)
     
     output$title <- renderUI({
-      titlePanel(sprintf("Welcome, %s", synGetUserProfile()$userName))
+      titlePanel(sprintf("Welcome, %s", synapse$getUserProfile()$userName))
     })
     
     sf_fileview <- eventReactive(input$getfv, {
-      foo <- synTableQuery(sprintf("select * from %s where fileFormat = 'sf'", input$fileviewId))$asDataFrame()
+      foo <- synapse$tableQuery(sprintf("select * from %s where fileFormat = 'sf'", input$fileviewId))$asDataFrame()
       })
 
     output$fv_dl <- renderText(
