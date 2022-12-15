@@ -18,8 +18,8 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          # The rsconnect R package needs cUrl.  This app needs the Java JDK (runtime AND compiler).
-          sudo apt-get install -y libcurl4-openssl-dev default-jdk
+          # The rsconnect R package needs cUrl.
+          sudo apt-get install -y libcurl4-openssl-dev
           # fix for devtools https://github.com/r-lib/devtools/issues/2131
           sudo apt-get install build-essential libcurl4-gnutls-dev libxml2-dev libssl-dev 
           sudo apt-get install libharfbuzz-dev libfribidi-dev 
@@ -56,9 +56,9 @@ jobs:
           rsConnectToken <- "${{ secrets.RSCONNECT_TOKEN }}"
           rsConnectSecret <- "${{ secrets.RSCONNECT_SECRET }}" 
           rsconnect::setAccountInfo(rsConnectUser, rsConnectToken, rsConnectSecret)
-          # omit archive/ folder from the collection to be deployed
-          # (Tried using .rcsignore file but it did not work as documented.)
-          appFiles<-dir(include.dirs=TRUE)[which(dir()!="archive")]
+          # omit docker/ folder from the collection to be deployed
+          d<-dir()
+          appFiles<-d[which(d!="docker" & d!="synapse-to-multiplier")]
           rsconnect::deployApp(appName = appName, appFiles=appFiles)
           # important NOT to run this step as sudo, otherwise env var's will be missing
         shell: Rscript {0}
