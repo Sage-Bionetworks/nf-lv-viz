@@ -36,6 +36,7 @@ jobs:
           install.packages('rsconnect')
           install.packages(c('feather', 'reticulate', 'DT', 'TTR', 'XML', 'assertthat', 'backports', 'beeswarm', 'data.table', 'dplyr'))
           install.packages(c('broom', 'emojifont', 'ggbeeswarm', 'highcharter', 'igraph', 'lubridate', 'plotly', 'progress', 'proto'))
+          install.packages(c('readr', 'shinycssloaders' , 'shinydashboard', 'shinyjs', 'slam', 'textshape', 'tzdb', 'vroom'))
           BiocManager::install(c('tximport', 'org.Hs.eg.db'))
           devtools::install_github('wgmao/PLIER')
           # running this step as 'sudo' is necessary to be able to install packages in default library
