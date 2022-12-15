@@ -1,20 +1,21 @@
 
 library(tximport)
 library(dplyr)
+library(synapser)
 
-synapse$login()
+synLogin()
 
 library(org.Hs.eg.db)
 source('https://raw.githubusercontent.com/greenelab/multi-plier/7c56a2867f9f08f7bcd3617875c7c2dbe886cbeb/util/plier_util.R')
 
-plier_model <- readr::read_rds(synapse$get("syn18689545")$path)
+plier_model <- readr::read_rds(synGet("syn18689545")$path)
 
 `%>%` <- magrittr::`%>%`
 
-tx2gene_df <- synapse$get('syn18482848')$path %>% readr::read_tsv()
+tx2gene_df <- synGet('syn18482848')$path %>% readr::read_tsv()
 
 
-metadata <- synapse$tableQuery("SELECT * FROM syn16858331 where fileFormat = 'sf'", 
+metadata <- synTableQuery("SELECT * FROM syn16858331 where fileFormat = 'sf'", 
                           includeRowIdAndRowVersion=F)$asDataFrame()
 
 metadata$isCellLine <- toupper(metadata$isCellLine)
@@ -22,7 +23,7 @@ metadata$isCellLine <- toupper(metadata$isCellLine)
 rownames(metadata) <- metadata$id
 
 
-salmon_entities <- sapply(metadata$id, synapse$get)
+salmon_entities <- sapply(metadata$id, synGet)
 
 salmon_filepaths <- sapply(salmon_entities, function(x){
   x$path
