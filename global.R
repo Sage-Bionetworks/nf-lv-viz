@@ -12,6 +12,26 @@ library(textshape)
 library(emojifont)
 library(DT)
 
+
+.onLoad <- function(libname, pkgname) {
+  if (Sys.getenv("R_CONFIG_ACTIVE") == "shinyapps") {
+  	venv_folder<-'./python3_env'
+  	if (!file.exists(venv_folder)) {
+    	# Install Python and the Synapse Python client
+    	# Ideally this would be done prior to deploying the app' to ShinyApps
+    	# but the huge number of installed files causes the deployable artifact
+    	# to exceed the 10,000 file limit.  The effect of doing it here is a slow
+    	# start up the first time the app' is run.
+    	# From https://stackoverflow.com/questions/54651700/use-python-3-in-reticulate-on-shinyapps-io
+    	reticulate::virtualenv_create(envname = venv_folder, python = '/usr/bin/python3')
+    	reticulate::virtualenv_install(venv_folder, packages = c('synapseclient', 'pandas'))
+     }
+     reticulate::use_virtualenv(venv_folder, required = T)
+  }
+  synapse_package <<- reticulate::import("synapseclient", delay_load = TRUE)
+  synapse <<- synapse_package$Synapse()
+}
+
 mp_dat <- read_feather("data/filt_nf_mp_res.feather") %>% 
   group_by(specimenID, latent_var) %>%  ##short term fix for duplicated analyses
   slice(1)

@@ -1,0 +1,64 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/master/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+
+name: shiny-deploy
+
+on:
+  push:
+    branches:
+      - master
+      - release*
+
+jobs:
+  shiny-deploy:
+    runs-on: ubuntu-latest
+ 
+    steps:
+ 
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          # The rsconnect R package needs cUrl.
+          sudo apt-get install -y libcurl4-openssl-dev
+          # fix for devtools https://github.com/r-lib/devtools/issues/2131
+          sudo apt-get install build-essential libcurl4-gnutls-dev libxml2-dev libssl-dev 
+          sudo apt-get install libharfbuzz-dev libfribidi-dev 
+ 
+      - uses: actions/checkout@v2
+        
+      - name: Install R packages
+        run: |
+          Sys.setenv(GITHUB_PAT="${{ secrets.pat_for_shinyapps_action }}")
+          options(repos = c('http://cran.fhcrc.org', getOption("repos")))
+          install.packages('BiocManager')
+          options(repos = c(BiocManager::repositories(),  getOption("repos")))
+          install.packages('devtools')
+          install.packages('rsconnect')
+          install.packages(c('feather', 'reticulate', 'DT', 'TTR', 'XML', 'assertthat', 'backports', 'beeswarm', 'data.table', 'dplyr'))
+          install.packages(c('broom', 'emojifont', 'ggbeeswarm', 'highcharter', 'igraph', 'lubridate', 'plotly', 'progress', 'proto'))
+          install.packages(c('readr', 'shinycssloaders' , 'shinydashboard', 'shinyjs', 'slam', 'textshape', 'tzdb', 'vroom'))
+          BiocManager::install(c('tximport', 'org.Hs.eg.db'))
+          devtools::install_github('wgmao/PLIER')
+          # running this step as 'sudo' is necessary to be able to install packages in default library
+        shell: sudo Rscript {0}
+
+      - name: Deploy app
+        run: |
+          options(repos = c('http://cran.fhcrc.org', BiocManager::repositories(), getOption("repos")))
+ 
+          branch<-Sys.getenv("GITHUB_REF_NAME")
+          repo<-Sys.getenv("GITHUB_REPOSITORY")
+          appName<-strsplit(repo, "/")[[1]][2]
+          if (!startsWith(branch, "release")) {
+             appName = paste(appName, "staging", sep="-")
+          }
+          rsConnectUser <-"${{ secrets.RSCONNECT_USER }}"
+          rsConnectToken <- "${{ secrets.RSCONNECT_TOKEN }}"
+          rsConnectSecret <- "${{ secrets.RSCONNECT_SECRET }}" 
+          rsconnect::setAccountInfo(rsConnectUser, rsConnectToken, rsConnectSecret)
+          # omit docker/ folder from the collection to be deployed
+          d<-dir()
+          appFiles<-d[which(d!="docker" & d!="synapse-to-multiplier")]
+          rsconnect::deployApp(appName = appName, appFiles=appFiles)
+          # important NOT to run this step as sudo, otherwise env var's will be missing
+        shell: Rscript {0}
